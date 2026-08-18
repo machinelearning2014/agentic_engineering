@@ -29,6 +29,9 @@ PLACEHOLDERS=(
   "<result>"
 )
 
+# Dependency-manifest filenames whose change is security/scope-relevant.
+DEP_FILES="package.json package-lock.json yarn.lock pnpm-lock.yaml requirements.txt pyproject.toml poetry.lock Pipfile Pipfile.lock go.mod go.sum Cargo.toml Cargo.lock pom.xml build.gradle build.gradle.kts Gemfile Gemfile.lock composer.json composer.lock"
+
 usage() {
   cat <<'EOF'
 ae — Agentic Engineering task helper
@@ -37,6 +40,7 @@ Usage:
   ae new <task>                        Scaffold tasks/<task>/spec.md
   ae verify [<task>]                   Lint the spec(s); exit non-zero on failure
   ae blocker <task>                    Scaffold tasks/<task>/blocker.md
+  ae review <task>                     Scaffold tasks/<task>/review.md (auto-detects diff facts)
   ae accept <task> --evidence "..."    Record an ACCEPT decision (verify must pass)
   ae reject <task> --reason "..."      Record a REJECT decision
   ae status                            List every task and its loop state
@@ -47,12 +51,162 @@ EOF
 task_spec()     { printf '%s/%s/spec.md'     "$TASKS_DIR" "$1"; }
 task_blocker()  { printf '%s/%s/blocker.md'  "$TASKS_DIR" "$1"; }
 task_decision() { printf '%s/%s/decision.md' "$TASKS_DIR" "$1"; }
+task_review()   { printf '%s/%s/review.md'   "$TASKS_DIR" "$1"; }
 
 require_task() {
   [[ -n "$1" ]] || { echo "ae: error: missing task name" >&2; exit 1; }
   case "$1" in
     */*) echo "ae: error: task name must not contain '/'" >&2; exit 1 ;;
   esac
+}
+
+# --- review auto-detection helpers ----------------------------------------
+
+is_in_git() {
+  git -C "$SCRIPT_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
+changed_files() {
+  git -C "$SCRIPT_DIR" status --porcelain -z | while IFS= read -r -d '' entry; do
+    status="${entry:0:2}"
+    path="${entry:3}"
+    printf '%s\n' "$path"
+    case "$status" in
+      R*|C*) IFS= read -r -d '' _src || true ;;
+    esac
+  done | grep -v '^tasks/' || true
+}
+
+spec_scope() {
+  sed -n '/^## Scope/,/^## Do not change/p' "$1" \
+    | sed -n 's/^- //p' \
+    | sed 's/[[:space:]]*$//' \
+    | sed '/^$/d'
+}
+
+spec_publication() {
+  sed -n '/^## Publication intent/,/^## Acceptance criteria/p' "$1" \
+    | sed -n 's/^- \[x\] //p'
+}
+
+in_scope() {
+  local f="$1" entries="$2" s
+  while IFS= read -r s; do
+    s="${s%/}"
+    [[ -z "$s" ]] && continue
+    if [[ "$f" == $s || "$f" == $s/* ]]; then
+      return 0
+    fi
+  done <<< "$entries"
+  return 1
+}
+
+is_dep_file() {
+  local b; b="$(basename "$1")"
+  case " $DEP_FILES " in
+    *" $b "*) return 0 ;;
+  esac
+  return 1
+}
+
+is_test_file() {
+  local f="$1" b
+  b="$(basename "$f")"
+  case "$f" in
+    test/*|tests/*|__tests__/*|spec/*|*/test/*|*/tests/*|*/__tests__/*) return 0 ;;
+  esac
+  case "$b" in
+    *_test.*|*.test.*|test_*|*_spec.*|*.spec.*|*Test.*|*Tests.*) return 0 ;;
+  esac
+  return 1
+}
+
+emit_facts() {
+  local spec="$1" pub scope files f dep_found test_found n removed
+  pub="$(spec_publication "$spec")"
+  echo "### Publication intent (from the spec)"
+  if [[ -n "$pub" ]]; then
+    echo "- $pub"
+  else
+    echo "- (none checked — spec is incomplete)"
+  fi
+  echo
+
+  if ! is_in_git; then
+    echo "### Changed files"
+    echo "- (not a git repository — auto-detection skipped; review \`git diff\` manually)"
+    return 0
+  fi
+
+  files="$(changed_files | sort -u)"
+  echo "### Changed files"
+  if [[ -z "$files" ]]; then
+    echo "- (none — did the agent actually produce a diff?)"
+  else
+    while IFS= read -r f; do
+      if [[ -z "$f" ]]; then
+        continue
+      fi
+      echo "- $f"
+    done <<< "$files"
+  fi
+  echo
+
+  scope="$(spec_scope "$spec")"
+  echo "### Scope check"
+  if [[ -z "$scope" ]]; then
+    echo "- (no Scope entries in the spec — cannot check)"
+  else
+    while IFS= read -r f; do
+      if [[ -z "$f" ]]; then
+        continue
+      fi
+      if in_scope "$f" "$scope"; then
+        echo "- ✓ in scope: $f"
+      else
+        echo "- ⚠️  OUT OF SCOPE: $f"
+      fi
+    done <<< "$files"
+  fi
+  echo
+
+  echo "### Dependencies"
+  dep_found=""
+  while IFS= read -r f; do
+    if [[ -z "$f" ]]; then
+      continue
+    fi
+    if is_dep_file "$f"; then
+      dep_found=1
+      echo "- ⚠️  dependency manifest changed: $f"
+    fi
+  done <<< "$files"
+  if [[ -z "$dep_found" ]]; then
+    echo "- none"
+  fi
+  echo
+
+  echo "### Test changes"
+  test_found=""
+  removed=0
+  while IFS= read -r f; do
+    if [[ -z "$f" ]]; then
+      continue
+    fi
+    if is_test_file "$f"; then
+      test_found=1
+      echo "- modified: $f"
+      n=$(git -C "$SCRIPT_DIR" diff -- "$f" | grep -cE '^-[^-]' || true)
+      removed=$((removed + n))
+    fi
+  done <<< "$files"
+  if [[ -n "$test_found" ]]; then
+    if [[ "$removed" -gt 0 ]]; then
+      echo "- ⚠️  $removed line(s) removed from test files — check for test weakening"
+    fi
+  else
+    echo "- none"
+  fi
 }
 
 # --- commands -------------------------------------------------------------
@@ -80,6 +234,37 @@ cmd_blocker() {
   mkdir -p "$(dirname "$blocker")"
   { printf '# Blocker Record — %s\n' "$1"; tail -n +2 "$SCRIPT_DIR/blocker-record.md"; } > "$blocker"
   echo "Created $blocker"
+}
+
+cmd_review() {
+  require_task "$1"
+  local spec review
+  spec="$(task_spec "$1")"
+  review="$(task_review "$1")"
+  if [[ ! -f "$spec" ]]; then
+    echo "ae: error: no spec at $spec — run 'ae new $1' first" >&2
+    exit 1
+  fi
+  if [[ -e "$review" ]]; then
+    echo "ae: error: $review already exists" >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$review")"
+  {
+    echo "# Review Checklist — $1"
+    echo
+    echo "> Auto-generated by \`ae review\` on $(date '+%Y-%m-%d %H:%M:%S')."
+    echo "> Review the auto-detected facts, then work the checklist below."
+    echo
+    echo "## Auto-detected facts"
+    echo
+    emit_facts "$spec"
+    echo
+    echo "---"
+    echo
+    tail -n +2 "$SCRIPT_DIR/review-checklist.md"
+  } > "$review"
+  echo "Created $review"
 }
 
 verify_spec() {
@@ -212,11 +397,19 @@ cmd_status() {
     echo "No tasks yet — run 'ae new <task>'."
     return 0
   fi
-  local spec task decision state
+  local spec task decision review state total checked
   for spec in "$TASKS_DIR"/*/spec.md; do
     [[ -e "$spec" ]] || continue
     task="$(basename "$(dirname "$spec")")"
     if verify_spec "$spec" >/dev/null 2>&1; then state="verify: pass"; else state="verify: FAIL"; fi
+    review="$(task_review "$task")"
+    if [[ -f "$review" ]]; then
+      total=$(grep -cE '^- \[[ xX]\]' "$review" || true)
+      checked=$(grep -cE '^- \[[xX]\]' "$review" || true)
+      state="$state · review: $checked/$total"
+    else
+      state="$state · review: —"
+    fi
     decision="$(task_decision "$task")"
     if [[ -f "$decision" ]]; then
       if grep -q '^\*\*ACCEPT\*\*' "$decision"; then state="$state · decision: ACCEPT"; fi
@@ -235,6 +428,7 @@ main() {
     new)      cmd_new "$@" ;;
     verify)   cmd_verify "$@" ;;
     blocker)  cmd_blocker "$@" ;;
+    review)   cmd_review "$@" ;;
     accept)   cmd_accept "$@" ;;
     reject)   cmd_reject "$@" ;;
     status)   cmd_status "$@" ;;

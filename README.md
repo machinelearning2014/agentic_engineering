@@ -31,7 +31,8 @@ From your project directory (the one containing `ae`), per task:
 #     … fill in EVERY field …
 ./ae verify getuser-retry                       # no blanks, criteria executable
 #     … hand the spec to your agent …
-#     … review the diff with review-checklist.md …
+./ae review getuser-retry                         # auto-detects diff facts + scaffolds review.md
+#     … review the facts, check off all 8 items …
 ./ae accept getuser-retry --evidence "npm test green"   # record the decision
 ```
 
@@ -46,7 +47,7 @@ The five-stage loop — **Specify → Delegate → Review → Verify → Accept*
 | --- | --- | --- |
 | Specify | Human | `spec-template.md` — the spec is the load-bearing artifact |
 | Delegate | Agent | `AGENTS.md` + the filled spec — the agent executes only, inside scope |
-| Review | Human | `review-checklist.md` — read the diff, not the summary |
+| Review | Human | `ae review` — auto-detected diff facts, then `review-checklist.md` to check off |
 | Verify | Human | `acceptance-criteria.md` + `ae verify` — executable checks |
 | Accept | Human | `ae accept` / `ae reject` — a recorded decision |
 
@@ -82,9 +83,10 @@ One command per stage (plain bash, no dependencies):
 | `./ae new <task>` | Scaffold `tasks/<task>/spec.md` |
 | `./ae verify [<task>]` | Lint: no blanks, criteria executable, one publication-intent checkbox |
 | `./ae blocker <task>` | Scaffold `tasks/<task>/blocker.md` |
+| `./ae review <task>` | Scaffold `tasks/<task>/review.md` — auto-detects changed files, scope (paths or globs), deps, test changes |
 | `./ae accept <task> --evidence "…"` | Record ACCEPT (refuses unless verify passes) |
 | `./ae reject <task> --reason "…"` | Record REJECT |
-| `./ae status` | Show each task's verify + decision state |
+| `./ae status` | Show each task's verify, review, and decision state |
 
 `verify` exits non-zero on a failing spec, so it also works as a CI gate.
 
