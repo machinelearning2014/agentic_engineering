@@ -6,6 +6,33 @@ the single load-bearing artifact** of the agentic workflow — everything else (
 verification, mutation control, failure handling) hangs off it. These files turn that
 claim into fill-in-the-blank working surfaces.
 
+## Who uses this, and what “copy” means
+
+Two audiences, two jobs — the split is not optional:
+
+| Audience | Job in the loop | Uses |
+| --- | --- | --- |
+| **You (the human)** | Specify, Review, Verify, Accept | Fill in the templates; make the decisions |
+| **The AI coding agent** | Delegate: execute inside the scoped loop | Reads the *filled* spec + criteria; returns a diff + evidence |
+
+The templates are **fill-in-the-blank surfaces for you**, the human. The *filled*
+specification (objective, scope, do-not-change, publication intent, criteria) is the
+**delegation artifact** — the thing you hand to the agent, as text, when you delegate.
+The review, blocker, and lifecycle checklists are **your** decision surfaces, not files
+the agent consumes. You may show them to the agent for context, but you carry the
+four decisions: specification, delegation, review, acceptance.
+
+**“Copy” = duplicate a file, not `git clone` this repo.** Concretely:
+
+- **Reuse the kit in your project**: copy the five template files into your own repo
+  (or `git clone` this repo once and keep the files you want). Adapt them to your tooling.
+- **Per task**: duplicate one template into a fresh file and fill it in, e.g.
+  `cp spec-template.md tasks/getuser-retry.md`.
+
+There is no library to import and nothing for the agent to install. The agent never
+touches this repository — it receives a *filled* spec as text (pasted into the agent’s
+prompt or pointed at by path), then works inside the scoped loop.
+
 ## Files
 
 | File | Source (book) | Purpose |
@@ -24,9 +51,10 @@ The kit follows the five-stage loop: **Specify → Delegate → Review → Verif
 
 ### 1. Write the specification first (`spec-template.md`)
 
-Copy `spec-template.md` into a per-task file (e.g. `tasks/<task-name>.md`) and fill in
-EVERY field before delegating. A blank field is a gap the agent will fill with
-something plausible-but-wrong.
+Copy `spec-template.md` into a per-task file (duplicate the file, e.g.
+`cp spec-template.md tasks/<task-name>.md` — see “Who uses this” above) and fill in
+EVERY field before delegating. The filled file is what you hand to the agent.
+A blank field is a gap the agent will fill with something plausible-but-wrong.
 
 - **Objective** — one falsifiable sentence. “Make it better” fails; “`make build`
   exits 0 and the full test suite passes” works.
