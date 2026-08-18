@@ -1,4 +1,4 @@
-# OpenSpec vs. the Agentic Engineering Template Kit
+# OpenSpec vs. the Agentic Engineering Toolkit
 
 ## TL;DR
 
@@ -9,7 +9,7 @@ opposite centers of gravity:
   spec-driven development into agent-native slash commands (`/opsx:new`, `/opsx:ff`,
   `/opsx:apply`, `/opsx:archive`). The **agent drafts the spec**; the human reviews
   intent before code.
-- **The Agentic Engineering template kit** is a **method**: fill-in-the-blank
+- **The Agentic Engineering toolkit** is a **method**: fill-in-the-blank
   Markdown documents. The **human authors the spec**; the agent only executes inside
   a boundary. There is no software.
 
@@ -55,7 +55,7 @@ implementation, then archives. The human's lever is "review intent, not just cod
 
 ---
 
-## 2. What the Agentic Engineering template kit is
+## 2. What the Agentic Engineering toolkit is
 
 Five fill-in-the-blank Markdown documents distilled from the *Agentic Engineering*
 textbook (ed. 2.0), plus a worked example:
@@ -85,7 +85,7 @@ and returns a diff + evidence.
 
 ## 3. Side-by-side
 
-| Dimension | OpenSpec | AE template kit |
+| Dimension | OpenSpec | AE toolkit |
 | --- | --- | --- |
 | Category | Tool / framework (CLI + conventions) | Method / documents |
 | Installable? | Yes (`npm i -g @fission-ai/openspec`) | No — copy Markdown |
