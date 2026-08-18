@@ -43,6 +43,7 @@ prompt or pointed at by path), then works inside the scoped loop.
 | `blocker-record.md` | Ch. 18.4 / 11.6 | Record a stalled route and pivot |
 | `task-lifecycle-checklist.md` | Ch. 20 / 6 | End-to-end gate checklist for the five-stage loop |
 | `example.md` | — | A fully worked run of the kit on one small task |
+| `openspec-comparison.md` | — | How this kit relates to the OpenSpec spec-driven-development framework |
 
 ## How to use
 
