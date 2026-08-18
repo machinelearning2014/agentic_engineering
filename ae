@@ -1,0 +1,246 @@
+#!/usr/bin/env bash
+#
+# ae — Agentic Engineering task helper.
+# Scaffold a task, lint the spec, and record accept/reject decisions
+# for the five-stage loop (Specify → Delegate → Review → Verify → Accept).
+#
+# No dependencies. Works with bash 3.2+ (macOS default).
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TASKS_DIR="$SCRIPT_DIR/tasks"
+
+# Substrings that mark an unfilled template field. A completed spec must
+# contain none of these.
+PLACEHOLDERS=(
+  "<Write it here"
+  "<path or module"
+  "<invariant to preserve"
+  "<branch>"
+  "<remote>"
+  "<head>"
+  "<base>"
+  "<Executable check"
+  "<Change summary"
+  "<Evidence: exit codes"
+  "<Known limitations"
+  "<command>"
+  "<result>"
+)
+
+usage() {
+  cat <<'EOF'
+ae — Agentic Engineering task helper
+
+Usage:
+  ae new <task>                        Scaffold tasks/<task>/spec.md
+  ae verify [<task>]                   Lint the spec(s); exit non-zero on failure
+  ae blocker <task>                    Scaffold tasks/<task>/blocker.md
+  ae accept <task> --evidence "..."    Record an ACCEPT decision (verify must pass)
+  ae reject <task> --reason "..."      Record a REJECT decision
+  ae status                            List every task and its loop state
+  ae help                              Show this message
+EOF
+}
+
+task_spec()     { printf '%s/%s/spec.md'     "$TASKS_DIR" "$1"; }
+task_blocker()  { printf '%s/%s/blocker.md'  "$TASKS_DIR" "$1"; }
+task_decision() { printf '%s/%s/decision.md' "$TASKS_DIR" "$1"; }
+
+require_task() {
+  [[ -n "$1" ]] || { echo "ae: error: missing task name" >&2; exit 1; }
+  case "$1" in
+    */*) echo "ae: error: task name must not contain '/'" >&2; exit 1 ;;
+  esac
+}
+
+# --- commands -------------------------------------------------------------
+
+cmd_new() {
+  require_task "$1"
+  local spec; spec="$(task_spec "$1")"
+  if [[ -e "$spec" ]]; then
+    echo "ae: error: $spec already exists" >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$spec")"
+  { printf '# Task Specification — %s\n' "$1"; tail -n +2 "$SCRIPT_DIR/spec-template.md"; } > "$spec"
+  echo "Created $spec"
+  echo "Next: fill in EVERY field, then run 'ae verify $1'."
+}
+
+cmd_blocker() {
+  require_task "$1"
+  local blocker; blocker="$(task_blocker "$1")"
+  if [[ -e "$blocker" ]]; then
+    echo "ae: error: $blocker already exists" >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$blocker")"
+  { printf '# Blocker Record — %s\n' "$1"; tail -n +2 "$SCRIPT_DIR/blocker-record.md"; } > "$blocker"
+  echo "Created $blocker"
+}
+
+verify_spec() {
+  local spec="$1" fails=0
+  if [[ ! -f "$spec" ]]; then
+    echo "  ✗ missing spec file: $spec"
+    return 1
+  fi
+
+  local p n crits
+  for p in "${PLACEHOLDERS[@]}"; do
+    if grep -qF -- "$p" "$spec"; then
+      echo "  ✗ unfilled field: $p"
+      fails=$((fails + 1))
+    fi
+  done
+
+  n=$(grep -cE '^- \[x\]' "$spec" || true)
+  if [[ "$n" -ne 1 ]]; then
+    echo "  ✗ publication intent: expected exactly one '- [x]', found $n"
+    fails=$((fails + 1))
+  fi
+
+  crits=$(sed -n '/^## Acceptance criteria/,/^## Output contract/p' "$spec" \
+          | grep -cE '^[0-9]+\.' || true)
+  if [[ "$crits" -lt 1 ]]; then
+    echo "  ✗ acceptance criteria: need at least one numbered criterion"
+    fails=$((fails + 1))
+  fi
+
+  if [[ "$fails" -eq 0 ]]; then
+    echo "  ✓ spec checks pass"
+    return 0
+  fi
+  return 1
+}
+
+cmd_verify() {
+  if [[ $# -eq 0 ]]; then
+    if [[ ! -d "$TASKS_DIR" ]] || ! compgen -G "$TASKS_DIR/*/spec.md" >/dev/null; then
+      echo "No tasks yet — run 'ae new <task>'."
+      return 0
+    fi
+    local s rc=0
+    for s in "$TASKS_DIR"/*/spec.md; do
+      [[ -e "$s" ]] || continue
+      echo "${s#$SCRIPT_DIR/}"
+      verify_spec "$s" || rc=1
+    done
+    return "$rc"
+  fi
+
+  require_task "$1"
+  verify_spec "$(task_spec "$1")"
+}
+
+cmd_accept() {
+  local task="$1"; shift
+  require_task "$task"
+  local evidence=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --evidence) evidence="$2"; shift 2 ;;
+      *) echo "ae: error: unknown option: $1" >&2; usage; exit 1 ;;
+    esac
+  done
+  local spec decision
+  spec="$(task_spec "$task")"
+  decision="$(task_decision "$task")"
+  if [[ ! -f "$spec" ]]; then
+    echo "ae: error: no spec at $spec — run 'ae new $task' first" >&2
+    exit 1
+  fi
+  if ! verify_spec "$spec"; then
+    echo "ae: error: spec does not pass 'ae verify' — fix it or record a rejection" >&2
+    exit 1
+  fi
+  mkdir -p "$(dirname "$decision")"
+  {
+    echo "# Acceptance Decision — $task"
+    echo
+    echo "- **Task:** $spec"
+    echo "- **Date:** $(date '+%Y-%m-%d %H:%M:%S')"
+    echo
+    echo "## Decision"
+    echo
+    echo "**ACCEPT**"
+    echo
+    echo "## Evidence"
+    echo
+    if [[ -n "$evidence" ]]; then echo "$evidence"; else echo "(no evidence recorded)"; fi
+  } > "$decision"
+  echo "Recorded ACCEPT in $decision"
+}
+
+cmd_reject() {
+  local task="$1"; shift
+  require_task "$task"
+  local reason=""
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --reason) reason="$2"; shift 2 ;;
+      *) echo "ae: error: unknown option: $1" >&2; usage; exit 1 ;;
+    esac
+  done
+  local decision
+  decision="$(task_decision "$task")"
+  mkdir -p "$(dirname "$decision")"
+  {
+    echo "# Acceptance Decision — $task"
+    echo
+    echo "- **Task:** $(task_spec "$task")"
+    echo "- **Date:** $(date '+%Y-%m-%d %H:%M:%S')"
+    echo
+    echo "## Decision"
+    echo
+    echo "**REJECT**"
+    echo
+    echo "## Reason"
+    echo
+    if [[ -n "$reason" ]]; then echo "$reason"; else echo "(no reason recorded)"; fi
+    echo
+    echo "Next: re-enter the loop at Specify/Delegate (spec gap / route failure / verification failure)."
+  } > "$decision"
+  echo "Recorded REJECT in $decision"
+}
+
+cmd_status() {
+  if [[ ! -d "$TASKS_DIR" ]] || ! compgen -G "$TASKS_DIR/*/spec.md" >/dev/null; then
+    echo "No tasks yet — run 'ae new <task>'."
+    return 0
+  fi
+  local spec task decision state
+  for spec in "$TASKS_DIR"/*/spec.md; do
+    [[ -e "$spec" ]] || continue
+    task="$(basename "$(dirname "$spec")")"
+    if verify_spec "$spec" >/dev/null 2>&1; then state="verify: pass"; else state="verify: FAIL"; fi
+    decision="$(task_decision "$task")"
+    if [[ -f "$decision" ]]; then
+      if grep -q '^\*\*ACCEPT\*\*' "$decision"; then state="$state · decision: ACCEPT"; fi
+      if grep -q '^\*\*REJECT\*\*' "$decision"; then state="$state · decision: REJECT"; fi
+    else
+      state="$state · decision: —"
+    fi
+    echo "$task — $state"
+  done
+}
+
+main() {
+  local cmd="${1:-help}"
+  if [[ $# -gt 0 ]]; then shift; fi
+  case "$cmd" in
+    new)      cmd_new "$@" ;;
+    verify)   cmd_verify "$@" ;;
+    blocker)  cmd_blocker "$@" ;;
+    accept)   cmd_accept "$@" ;;
+    reject)   cmd_reject "$@" ;;
+    status)   cmd_status "$@" ;;
+    help|-h|--help) usage ;;
+    *) echo "ae: unknown command: $cmd" >&2; usage; exit 1 ;;
+  esac
+}
+
+main "$@"
