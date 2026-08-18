@@ -4,6 +4,9 @@ A complete run of the kit on one small, realistic task, so you can see every
 surface filled in. The task: **add retry-with-backoff for 5xx responses to the
 HTTP client’s `getUser` call, without changing its public API.**
 
+This shows the **manual path** (the artifacts themselves). Each stage has an `ae`
+equivalent: `ae new` → `ae check` → `ae review` → `ae verify` → `ae accept`.
+
 ---
 
 ## 1. Specify — `spec-template.md` filled in
@@ -28,17 +31,17 @@ final failure; 4xx responses are never retried.
 
 ## Publication intent
 - [x] None — stop at a local change; do not commit, push, or open a PR.
-- [ ] Commit — to branch: <branch>
-- [ ] Push — to remote: <remote>
-- [ ] Pull request — from <head> into <base>
+- [ ] Commit — to branch: ______
+- [ ] Push — to remote: ______
+- [ ] Pull request — from ______ into ______
 
 ## Acceptance criteria
-1. When I run `npm test`, all tests pass and no existing test was weakened or removed.
-2. When I run `git diff -- config/`, the output is empty.
-3. When a stub returns 500 three times then 200, `getUser` succeeds after 3 attempts.
-4. When a stub returns 500 four times, `getUser` rejects with the original typed error.
-5. When a stub returns 404, `getUser` performs exactly 1 request (no retry).
-6. When I run `npm run lint && npm run build`, both exit 0.
+1. When I run `npm test`, I observe all tests pass and no existing test was weakened.
+2. When I run `git diff -- config/`, I observe the output is empty.
+3. When I run `npm test -- --grep "retries 500 then 200"`, I observe the 3-attempt success case passes.
+4. When I run `npm test -- --grep "retries 500 four times"`, I observe the original-typed-error case passes.
+5. When I run `npm test -- --grep "404 no retry"`, I observe the single-request case passes.
+6. When I run `npm run lint && npm run build`, I observe both exit 0.
 
 ## Output contract
 - Change summary: what changed and why.
@@ -149,3 +152,7 @@ not a re-run of the same failed approach.
 
 After the re-run with the narrowed scope, the acceptance decision is recorded with
 the evidence that settled it — not the agent’s word.
+
+With `ae`, the last three stages are one command each: `ae review getuser-retry`
+(auto-detects the diff facts), `ae verify getuser-retry` (runs criteria 1–6 above),
+then `ae accept getuser-retry --evidence "npm test green"`.

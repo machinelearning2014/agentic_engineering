@@ -28,9 +28,9 @@ _Invariants, public APIs, behavior to preserve, files out of bounds._
 _Choose one. Default is NONE._
 
 - [ ] None — stop at a local change; do not commit, push, or open a PR.
-- [ ] Commit — to branch: <branch>
-- [ ] Push — to remote: <remote>
-- [ ] Pull request — from <head> into <base>
+- [ ] Commit — to branch: ______
+- [ ] Push — to remote: ______
+- [ ] Pull request — from ______ into ______
 
 ## Acceptance criteria
 

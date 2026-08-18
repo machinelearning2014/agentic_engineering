@@ -1,7 +1,9 @@
-# Acceptance Criteria Template
+# Acceptance Criteria — How to Write Them
 
 > Source: *Agentic Engineering* (ed. 2.0), Chapter 18.2 + Section 7.4.
 > An acceptance criterion is valid if and only if it is falsifiable, observable, and decidable.
+> **This file is a reference.** Record your task's actual criteria in `spec-template.md`
+> (the `## Acceptance criteria` section) — that is the single source `ae` reads.
 
 ## The sentence pattern
 
@@ -32,9 +34,3 @@ If you cannot fill in `<command>` and `<result>`, the criterion is not finished.
 - [ ] **Falsifiable** — the criterion must be able to fail.
 - [ ] **Observable** — the evidence is visible to YOU, not only to the agent.
 - [ ] **Decidable** — a procedure settles pass/fail with no reasonable disagreement.
-
-## My criteria
-
-1. When I run `<command>`, I observe `<result>`.
-2. When I run `<command>`, I observe `<result>`.
-3. When I run `<command>`, I observe `<result>`.
