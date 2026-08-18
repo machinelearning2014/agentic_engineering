@@ -6,15 +6,29 @@ workflow — review, verification, mutation control, and failure handling all ha
 it. These files turn that claim into fill-in-the-blank working surfaces you copy into
 your own project.
 
-## Quick start
+## Get the kit
+
+One-time setup — bring the files into your project:
 
 ```bash
-./ae new getuser-retry                          # 1. scaffold tasks/getuser-retry/spec.md
+git clone https://github.com/machinelearning2014/agentic_engineering.git
+cd agentic_engineering
+```
+
+…or copy the files you need (see **Files**) into an existing repo. Either way, keep
+`ae` and the templates together in the same directory.
+
+## Quick start
+
+Per task:
+
+```bash
+./ae new getuser-retry                          # scaffold tasks/getuser-retry/spec.md
 #     … fill in EVERY field …
-./ae verify getuser-retry                       # 2. lint: no blanks, criteria executable
+./ae verify getuser-retry                       # no blanks, criteria executable
 #     … hand the spec to your agent …
-#     … run review-checklist.md on the diff …
-./ae accept getuser-retry --evidence "npm test green"   # 3. record the decision
+#     … review the diff with review-checklist.md …
+./ae accept getuser-retry --evidence "npm test green"   # record the decision
 ```
 
 See `example.md` for a complete filled-in run.
@@ -22,7 +36,7 @@ See `example.md` for a complete filled-in run.
 ## How it works
 
 The five-stage loop — **Specify → Delegate → Review → Verify → Accept**
-(or reject → re-enter). Two roles, one boundary:
+(or reject → re-enter):
 
 | Stage | Who | Surface |
 | --- | --- | --- |
@@ -37,10 +51,9 @@ accept); the **agent** only executes inside the scoped loop and returns a diff +
 evidence. The agent is a capable executor and an untrustworthy authority — accept
 nothing on its word.
 
-**"Copy" means duplicate a file, not `git clone`.** Reuse the kit by copying the
-templates into your own repo (or cloning this one once); per task, `./ae new <task>`
-instantiates a fresh spec. The agent never touches this repository — it receives the
-*filled* spec as text.
+"Copy" throughout this kit means **duplicate a file**, not clone this repo — cloning
+is only how you obtain the kit once; `./ae new <task>` is what instantiates a spec per
+task.
 
 ## Files
 
