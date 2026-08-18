@@ -8,19 +8,23 @@ your own project.
 
 ## Get the kit
 
-One-time setup — bring the files into your project:
+One-time setup — put the kit files **inside your project**, in the directory you'll run
+the agent from. Download or clone this repo, then copy `ae`, `AGENTS.md`, and the five
+templates (see **Files**) into your project:
 
 ```bash
 git clone https://github.com/machinelearning2014/agentic_engineering.git
-cd agentic_engineering
+cp agentic_engineering/ae agentic_engineering/AGENTS.md \
+   agentic_engineering/{spec-template,acceptance-criteria,review-checklist,blocker-record,task-lifecycle-checklist}.md \
+   /path/to/your-project/
 ```
 
-…or copy the files you need (see **Files**) into an existing repo. Either way, keep
-`ae` and the templates together in the same directory.
+`./ae` is run from that project directory, and it creates `tasks/` there — so the
+**Scope** paths in your spec are relative to your project.
 
 ## Quick start
 
-Per task:
+From your project directory (the one containing `ae`), per task:
 
 ```bash
 ./ae new getuser-retry                          # scaffold tasks/getuser-retry/spec.md
