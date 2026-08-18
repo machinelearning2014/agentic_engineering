@@ -29,10 +29,11 @@ From your project directory (the one containing `ae`), per task:
 ```bash
 ./ae new getuser-retry                          # scaffold tasks/getuser-retry/spec.md
 #     … fill in EVERY field …
-./ae verify getuser-retry                       # no blanks, criteria executable
+./ae check getuser-retry                        # lint: no blanks, criteria executable
 #     … hand the spec to your agent …
-./ae review getuser-retry                         # auto-detects diff facts + scaffolds review.md
+./ae review getuser-retry                       # auto-detects diff facts + scaffolds review.md
 #     … review the facts, check off all 8 items …
+./ae verify getuser-retry                       # run the acceptance-criteria commands
 ./ae accept getuser-retry --evidence "npm test green"   # record the decision
 ```
 
@@ -45,10 +46,10 @@ The five-stage loop — **Specify → Delegate → Review → Verify → Accept*
 
 | Stage | Who | Surface |
 | --- | --- | --- |
-| Specify | Human | `spec-template.md` — the spec is the load-bearing artifact |
+| Specify | Human | `spec-template.md` + `ae check` — the spec is the load-bearing artifact |
 | Delegate | Agent | `AGENTS.md` + the filled spec — the agent executes only, inside scope |
 | Review | Human | `ae review` — auto-detected diff facts, then `review-checklist.md` to check off |
-| Verify | Human | `acceptance-criteria.md` + `ae verify` — executable checks |
+| Verify | Human | `ae verify` — runs the acceptance-criteria commands |
 | Accept | Human | `ae accept` / `ae reject` — a recorded decision |
 
 The **human** authors the spec and owns the four decisions (specify, delegate, review,
@@ -60,6 +61,14 @@ nothing on its word.
 is only how you obtain the kit once; `./ae new <task>` is what instantiates a spec per
 task.
 
+**Two paths.** The kit works with or without `ae`:
+
+1. **Manual** — copy the templates, fill them in, and run the checklists by hand. The
+   Markdown files are the whole toolkit; nothing requires the script.
+2. **Semi-automatic** — use `ae` to scaffold, lint, review, verify, and record. It
+   discovers the mechanical facts (diff, scope, deps, criteria exit codes); the
+   decisions stay yours.
+
 ## Files
 
 | File | Source (book) | Purpose |
@@ -70,7 +79,7 @@ task.
 | `blocker-record.md` | Ch. 18.4 / 11.6 | Record a stalled route and pivot |
 | `task-lifecycle-checklist.md` | Ch. 20 / 6 | End-to-end gate checklist for the loop |
 | `AGENTS.md` | — | Standing instructions the agent reads before working |
-| `ae` | — | Task helper: `ae new/verify/blocker/accept/reject/status` |
+| `ae` | — | Task helper: `ae new/check/review/verify/blocker/accept/reject/status` |
 | `example.md` | — | A fully worked run of the kit on one small task |
 | `openspec-comparison.md` | — | How this kit relates to the OpenSpec framework |
 
@@ -81,14 +90,15 @@ One command per stage (plain bash, no dependencies):
 | Command | What it does |
 | --- | --- |
 | `./ae new <task>` | Scaffold `tasks/<task>/spec.md` |
-| `./ae verify [<task>]` | Lint: no blanks, criteria executable, one publication-intent checkbox |
+| `./ae check [<task>]` | Lint the spec: no blanks, criteria executable, one publication-intent checkbox |
 | `./ae blocker <task>` | Scaffold `tasks/<task>/blocker.md` |
 | `./ae review <task>` | Scaffold `tasks/<task>/review.md` — auto-detects changed files, scope (paths or globs), deps, test changes |
-| `./ae accept <task> --evidence "…"` | Record ACCEPT (refuses unless verify passes) |
+| `./ae verify [<task>]` | Run the acceptance-criteria commands; records `tasks/<task>/verify.md` |
+| `./ae accept <task> --evidence "…"` | Record ACCEPT (refuses unless check + verify pass) |
 | `./ae reject <task> --reason "…"` | Record REJECT |
-| `./ae status` | Show each task's verify, review, and decision state |
+| `./ae status` | Show each task's check, review, verify, and decision state |
 
-`verify` exits non-zero on a failing spec, so it also works as a CI gate.
+`check` and `verify` exit non-zero on failure, so they work as CI gates.
 
 ## The six load-bearing principles (book, Ch. 4)
 

@@ -38,10 +38,11 @@ ae — Agentic Engineering task helper
 
 Usage:
   ae new <task>                        Scaffold tasks/<task>/spec.md
-  ae verify [<task>]                   Lint the spec(s); exit non-zero on failure
+  ae check [<task>]                    Lint the spec(s) for completeness; exit non-zero on failure
   ae blocker <task>                    Scaffold tasks/<task>/blocker.md
   ae review <task>                     Scaffold tasks/<task>/review.md (auto-detects diff facts)
-  ae accept <task> --evidence "..."    Record an ACCEPT decision (verify must pass)
+  ae verify [<task>]                   Run the spec's acceptance-criteria commands
+  ae accept <task> --evidence "..."    Record an ACCEPT decision (check + verify must pass)
   ae reject <task> --reason "..."      Record a REJECT decision
   ae status                            List every task and its loop state
   ae help                              Show this message
@@ -52,6 +53,7 @@ task_spec()     { printf '%s/%s/spec.md'     "$TASKS_DIR" "$1"; }
 task_blocker()  { printf '%s/%s/blocker.md'  "$TASKS_DIR" "$1"; }
 task_decision() { printf '%s/%s/decision.md' "$TASKS_DIR" "$1"; }
 task_review()   { printf '%s/%s/review.md'   "$TASKS_DIR" "$1"; }
+task_verify()   { printf '%s/%s/verify.md'   "$TASKS_DIR" "$1"; }
 
 require_task() {
   [[ -n "$1" ]] || { echo "ae: error: missing task name" >&2; exit 1; }
@@ -221,7 +223,7 @@ cmd_new() {
   mkdir -p "$(dirname "$spec")"
   { printf '# Task Specification — %s\n' "$1"; tail -n +2 "$SCRIPT_DIR/spec-template.md"; } > "$spec"
   echo "Created $spec"
-  echo "Next: fill in EVERY field, then run 'ae verify $1'."
+  echo "Next: fill in EVERY field, then run 'ae check $1'."
 }
 
 cmd_blocker() {
@@ -267,7 +269,7 @@ cmd_review() {
   echo "Created $review"
 }
 
-verify_spec() {
+check_spec() {
   local spec="$1" fails=0
   if [[ ! -f "$spec" ]]; then
     echo "  ✗ missing spec file: $spec"
@@ -302,7 +304,7 @@ verify_spec() {
   return 1
 }
 
-cmd_verify() {
+cmd_check() {
   if [[ $# -eq 0 ]]; then
     if [[ ! -d "$TASKS_DIR" ]] || ! compgen -G "$TASKS_DIR/*/spec.md" >/dev/null; then
       echo "No tasks yet — run 'ae new <task>'."
@@ -312,13 +314,96 @@ cmd_verify() {
     for s in "$TASKS_DIR"/*/spec.md; do
       [[ -e "$s" ]] || continue
       echo "${s#$SCRIPT_DIR/}"
-      verify_spec "$s" || rc=1
+      check_spec "$s" || rc=1
     done
     return "$rc"
   fi
 
   require_task "$1"
-  verify_spec "$(task_spec "$1")"
+  check_spec "$(task_spec "$1")"
+}
+
+criteria_lines() {
+  sed -n '/^## Acceptance criteria/,/^## Output contract/p' "$1" \
+    | grep -E '^[0-9]+\.'
+}
+
+first_command() {
+  printf '%s' "$1" | sed -n 's/^[^`]*`\([^`]*\)`.*/\1/p'
+}
+
+run_verify_task() {
+  local task="$1" spec line cmd rc out total=0 passed=0 body="" verifyf
+  spec="$(task_spec "$task")"
+  if [[ ! -f "$spec" ]]; then
+    echo "ae: error: no spec at $spec — run 'ae new $task' first" >&2
+    return 1
+  fi
+
+  while IFS= read -r line; do
+    [[ -z "$line" ]] && continue
+    cmd="$(first_command "$line")"
+    total=$((total + 1))
+    if [[ -z "$cmd" ]]; then
+      body+="- ✗ (no command found) $line"$'\n'
+      continue
+    fi
+    if out=$( ( cd "$SCRIPT_DIR" && bash -c "$cmd" ) 2>&1 ); then
+      rc=0
+    else
+      rc=$?
+    fi
+    if [[ $rc -eq 0 ]]; then
+      passed=$((passed + 1))
+      body+="- ✓ (exit 0) $cmd"$'\n'
+    else
+      body+="- ✗ (exit $rc) $cmd"$'\n'
+      body+="  output: $(printf '%s' "$out" | tail -n 3 | tr '\n' ' ')"$'\n'
+    fi
+  done <<< "$(criteria_lines "$spec")"
+
+  local result="FAIL"
+  if [[ "$total" -gt 0 && "$passed" -eq "$total" ]]; then
+    result="PASS"
+  fi
+
+  verifyf="$(task_verify "$task")"
+  mkdir -p "$(dirname "$verifyf")"
+  {
+    echo "# Verification — $task"
+    echo
+    echo "- **Date:** $(date '+%Y-%m-%d %H:%M:%S')"
+    echo "- **Result:** $result"
+    echo
+    echo "## Criteria"
+    echo
+    printf '%s' "$body"
+  } > "$verifyf"
+
+  echo "$task — verify: $result ($passed/$total)"
+  printf '%s' "$body"
+  if [[ "$result" = "FAIL" ]]; then
+    return 1
+  fi
+  return 0
+}
+
+cmd_verify() {
+  if [[ $# -eq 0 ]]; then
+    if [[ ! -d "$TASKS_DIR" ]] || ! compgen -G "$TASKS_DIR/*/spec.md" >/dev/null; then
+      echo "No tasks yet — run 'ae new <task>'."
+      return 0
+    fi
+    local s rc=0
+    for s in "$TASKS_DIR"/*/spec.md; do
+      [[ -e "$s" ]] || continue
+      run_verify_task "$(basename "$(dirname "$s")")" || rc=1
+    done
+    return "$rc"
+  fi
+
+  require_task "$1"
+  run_verify_task "$1"
 }
 
 cmd_accept() {
@@ -338,8 +423,12 @@ cmd_accept() {
     echo "ae: error: no spec at $spec — run 'ae new $task' first" >&2
     exit 1
   fi
-  if ! verify_spec "$spec"; then
-    echo "ae: error: spec does not pass 'ae verify' — fix it or record a rejection" >&2
+  if ! check_spec "$spec"; then
+    echo "ae: error: spec does not pass 'ae check' — fix it first" >&2
+    exit 1
+  fi
+  if [[ ! -f "$(task_verify "$task")" ]] || ! grep -q '^- \*\*Result:\*\* PASS$' "$(task_verify "$task")"; then
+    echo "ae: error: no passing verification — run 'ae verify $task' first" >&2
     exit 1
   fi
   mkdir -p "$(dirname "$decision")"
@@ -397,11 +486,11 @@ cmd_status() {
     echo "No tasks yet — run 'ae new <task>'."
     return 0
   fi
-  local spec task decision review state total checked
+  local spec task decision review verifyf state total checked
   for spec in "$TASKS_DIR"/*/spec.md; do
     [[ -e "$spec" ]] || continue
     task="$(basename "$(dirname "$spec")")"
-    if verify_spec "$spec" >/dev/null 2>&1; then state="verify: pass"; else state="verify: FAIL"; fi
+    if check_spec "$spec" >/dev/null 2>&1; then state="check: pass"; else state="check: FAIL"; fi
     review="$(task_review "$task")"
     if [[ -f "$review" ]]; then
       total=$(grep -cE '^- \[[ xX]\]' "$review" || true)
@@ -409,6 +498,14 @@ cmd_status() {
       state="$state · review: $checked/$total"
     else
       state="$state · review: —"
+    fi
+    verifyf="$(task_verify "$task")"
+    if [[ -f "$verifyf" ]] && grep -q '^- \*\*Result:\*\* PASS$' "$verifyf"; then
+      state="$state · verify: pass"
+    elif [[ -f "$verifyf" ]] && grep -q '^- \*\*Result:\*\* FAIL$' "$verifyf"; then
+      state="$state · verify: FAIL"
+    else
+      state="$state · verify: —"
     fi
     decision="$(task_decision "$task")"
     if [[ -f "$decision" ]]; then
@@ -426,6 +523,7 @@ main() {
   if [[ $# -gt 0 ]]; then shift; fi
   case "$cmd" in
     new)      cmd_new "$@" ;;
+    check)    cmd_check "$@" ;;
     verify)   cmd_verify "$@" ;;
     blocker)  cmd_blocker "$@" ;;
     review)   cmd_review "$@" ;;
