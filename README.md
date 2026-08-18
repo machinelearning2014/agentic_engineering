@@ -1,4 +1,4 @@
-# Agentic Engineering — Toolkit
+# Agentic Engineering — Spec-Driven Development Toolkit
 
 A reusable toolkit extracted from *Agentic Engineering* (ed. 2.0). The book's core
 claim: **the task specification is the single load-bearing artifact** of the agentic

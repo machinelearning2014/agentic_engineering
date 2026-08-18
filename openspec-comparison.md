@@ -1,4 +1,4 @@
-# OpenSpec vs. the Agentic Engineering Toolkit
+# OpenSpec vs. the Agentic Engineering Spec-Driven Development Toolkit
 
 ## TL;DR
 
