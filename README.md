@@ -48,12 +48,12 @@ master map. Each stage has one `ae` command and one working surface:
 ```mermaid
 flowchart LR
     subgraph master["task-lifecycle-checklist.md — the master gate map"]
-        S1["<b>1 · Specify</b> — Human<br/>ae new · ae check<br/>spec-template.md + acceptance-criteria.md"]
-        S2["<b>2 · Delegate</b> — Human → Agent<br/>hand off<br/>AGENTS.md + filled spec"]
-        S3["<b>3 · Review</b> — Human<br/>ae review<br/>review-checklist.md"]
-        S4["<b>4 · Verify</b> — Human + Agent<br/>ae verify<br/>run the acceptance criteria"]
-        S5["<b>5 · Accept</b> — Human<br/>ae accept · ae reject<br/>recorded decision"]
-        B["<b>blocker-record.md</b><br/>record and pivot"]
+        S1["<b>1 · Specify</b><br/><i>Human</i><br/><code>ae new · ae check</code><br/>spec-template.md<br/>+ acceptance-criteria.md"]
+        S2["<b>2 · Delegate</b><br/><i>Human → Agent</i><br/><code>hand off</code><br/>AGENTS.md + filled spec"]
+        S3["<b>3 · Review</b><br/><i>Human</i><br/><code>ae review</code><br/>review-checklist.md"]
+        S4["<b>4 · Verify</b><br/><i>Human + Agent</i><br/><code>ae verify</code><br/>run the acceptance criteria"]
+        S5["<b>5 · Accept</b><br/><i>Human</i><br/><code>ae accept · ae reject</code><br/>recorded decision"]
+        B["<b>blocker-record.md</b><br/><i>record and pivot</i>"]
 
         S1 --> S2 --> S3 --> S4 --> S5
         S3 -- "on stall" --> B
