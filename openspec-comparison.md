@@ -10,8 +10,8 @@ opposite centers of gravity:
   `/opsx:apply`, `/opsx:archive`). The **agent drafts the spec**; the human reviews
   intent before code.
 - **The Agentic Engineering toolkit** is a **method**: fill-in-the-blank
-  Markdown documents. The **human authors the spec**; the agent only executes inside
-  a boundary. There is no software.
+  Markdown templates plus a small local helper (`ae`). The **human authors the spec**;
+  the agent only executes inside a boundary. No install, no server.
 
 They are complementary, not competing: OpenSpec supplies the orchestration and
 knowledge base; the AE kit supplies the *content standards* (executable acceptance
@@ -57,29 +57,33 @@ implementation, then archives. The human's lever is "review intent, not just cod
 
 ## 2. What the Agentic Engineering toolkit is
 
-Five fill-in-the-blank Markdown documents distilled from the *Agentic Engineering*
-textbook (ed. 2.0), plus a worked example:
+Five fill-in-the-blank Markdown templates distilled from the *Agentic Engineering*
+textbook (ed. 2.0), plus a small bash helper (`ae`), an `AGENTS.md`, and a worked
+example:
 
 | File | Job |
 | --- | --- |
 | `spec-template.md` | Objective, Scope, Do-not-change, Publication intent, Acceptance criteria, Output contract |
-| `acceptance-criteria.md` | Turn adjectives into falsifiable/observable/decidable checks |
+| `acceptance-criteria.md` | How to turn adjectives into falsifiable/observable/decidable checks |
 | `review-checklist.md` | Review the diff as evidence; six failure classes; fact/inference/claim |
 | `blocker-record.md` | Record a stalled route and pivot (route fails, goal does not) |
-| `task-lifecycle-checklist.md` | Gate the five-stage loop Specify → Delegate → Review → Verify → Accept |
+| `task-lifecycle-checklist.md` | Master gate map for the loop Specify → Delegate → Review → Verify → Accept |
+| `ae` | Scaffold (`new`), lint (`check`), review (`review`), verify (`verify`), accept (`accept`) |
+| `AGENTS.md` | Standing instructions the agent reads before working |
 
-- **Delivery**: plain Markdown. No CLI, no install, no slash commands, no runtime.
-  You copy a template into a per-task file (`cp spec-template.md tasks/foo.md`) and
-  hand the *filled* file to the agent as text.
+- **Delivery**: plain Markdown + a dependency-free bash script. No install, no
+  server, no slash commands. Two paths: **manual** (copy the templates, run the
+  checklists by hand) or **semi-automatic** (`./ae new <task>` → `ae check` →
+  `ae review` → `ae verify` → `ae accept`).
 - **Loop**: Specify → Delegate → Review → Verify → Accept (or reject → re-enter),
   each stage with entry/exit gates.
 - **Philosophy**: the spec is "the single load-bearing artifact"; the agent is "a
   capable executor and an untrustworthy authority"; "accept nothing on its word."
 
 **Who does what in the AE kit:** the **human authors** every field of the spec
-("only the human knows what and why"), and owns four decisions — specification,
-delegation, review, acceptance. The **agent** only executes inside the scoped loop
-and returns a diff + evidence.
+("only the human knows what and why"), and owns three irreplaceable decisions —
+specification, review, acceptance. The **agent** executes inside the scoped loop
+and returns a diff + evidence; verification is run by both, independently.
 
 ---
 
@@ -87,9 +91,9 @@ and returns a diff + evidence.
 
 | Dimension | OpenSpec | AE toolkit |
 | --- | --- | --- |
-| Category | Tool / framework (CLI + conventions) | Method / documents |
-| Installable? | Yes (`npm i -g @fission-ai/openspec`) | No — copy Markdown |
-| Agent-native? | Yes — slash commands, `AGENTS.md` | No — paste/point at a filled file |
+| Category | Tool / framework (CLI + conventions) | Method + small local CLI (`ae`) |
+| Installable? | Yes (`npm i -g @fission-ai/openspec`) | No install — copy templates + `ae` |
+| Agent-native? | Yes — slash commands, `AGENTS.md` | Partly — `AGENTS.md`; spec still human-authored |
 | Who drafts the spec | **Agent** (you review) | **Human** (you write) |
 | Spec content | Requirements + Scenarios (SHALL / WHEN-THEN) | Objective, scope, do-not-change, publication intent, criteria |
 | Acceptance criteria | "Success criteria" in proposal (unstructured) | **Executable checks** — "When I run `<cmd>`, I observe `<result>`", must be falsifiable/observable/decidable |
@@ -156,7 +160,8 @@ They slot together cleanly — OpenSpec is the *conveyor belt*, the AE kit is th
 5. **At acceptance time**: gate the archive step on `task-lifecycle-checklist.md` —
    every criterion has a passing, inspected check, and the decision is recorded.
 
-**Net**: use OpenSpec when you want tooling, agent-native flow, and a growing spec
-base across a team. Use the AE kit's content standards regardless — whether you paste
-them into OpenSpec proposals or into any other agent. The AE kit is the smaller, more
-portable idea; OpenSpec is the larger, more automated idea.
+**Net**: use OpenSpec when you want heavy orchestration, cross-repo specs, and a
+growing knowledge base. Use the AE kit for a lightweight, human-authored spec loop
+(with or without the `ae` helper), and borrow its content standards even inside
+OpenSpec. The AE kit is the smaller, more portable idea; OpenSpec is the larger,
+more automated idea.

@@ -140,7 +140,7 @@ not a re-run of the same failed approach.
 
 ---
 
-## 6. Verify + Accept — `task-lifecycle-checklist.md` gates
+## 6. Gates — `task-lifecycle-checklist.md` (the master map)
 
 | Stage | Exit gate | Result here |
 | --- | --- | --- |
