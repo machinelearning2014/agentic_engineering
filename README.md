@@ -45,77 +45,34 @@ The five-stage loop — **Specify → Delegate → Review → Verify → Accept*
 (or reject → re-enter) — gated at every stage by `task-lifecycle-checklist.md`, the
 master map. Each stage has one `ae` command and one working surface:
 
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1160 540" width="100%" role="img" aria-label="Specify, Delegate, Review, Verify, Accept loop with ae commands, files, reject arc, and blocker branch">
-  <defs>
-    <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto">
-      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
-    </marker>
-  </defs>
+```mermaid
+flowchart LR
+    subgraph master["task-lifecycle-checklist.md — the master gate map"]
+        S1["<b>1 · Specify</b> — Human<br/>ae new · ae check<br/>spec-template.md + acceptance-criteria.md"]
+        S2["<b>2 · Delegate</b> — Human → Agent<br/>hand off<br/>AGENTS.md + filled spec"]
+        S3["<b>3 · Review</b> — Human<br/>ae review<br/>review-checklist.md"]
+        S4["<b>4 · Verify</b> — Human + Agent<br/>ae verify<br/>run the acceptance criteria"]
+        S5["<b>5 · Accept</b> — Human<br/>ae accept · ae reject<br/>recorded decision"]
+        B["<b>blocker-record.md</b><br/>record and pivot"]
 
-  <!-- master gate map -->
-  <rect x="40" y="16" width="1080" height="44" rx="8" fill="#0f172a"/>
-  <text x="580" y="44" text-anchor="middle" font-family="system-ui, sans-serif" font-size="15" font-weight="600" fill="#f8fafc">task-lifecycle-checklist.md — the master gate map (gates every stage)</text>
+        S1 --> S2 --> S3 --> S4 --> S5
+        S3 -- "on stall" --> B
+        B -- "pivot → back to Delegate" --> S2
+        S5 -- "reject → re-enter the loop" --> S1
+    end
 
-  <!-- 1 · Specify -->
-  <rect x="40" y="88" width="200" height="180" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
-  <text x="140" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1e3a8a">1 · Specify</text>
-  <text x="140" y="146" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#475569">Human</text>
-  <rect x="85" y="164" width="110" height="24" rx="12" fill="#00000012"/>
-  <text x="140" y="181" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#334155">ae new · ae check</text>
-  <text x="140" y="210" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#475569">spec-template.md</text>
-  <text x="140" y="227" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#475569">+ acceptance-criteria.md</text>
+    classDef human fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+    classDef agent fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+    classDef both fill:#ecfdf5,stroke:#059669,color:#064e3b
+    classDef accept fill:#f0fdf4,stroke:#16a34a,color:#14532d
+    classDef blocker fill:#fffbeb,stroke:#d97706,color:#78350f
 
-  <!-- 2 · Delegate -->
-  <rect x="256" y="88" width="200" height="180" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5"/>
-  <text x="356" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#4c1d95">2 · Delegate</text>
-  <text x="356" y="146" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#475569">Human → Agent</text>
-  <rect x="316" y="164" width="80" height="24" rx="12" fill="#00000012"/>
-  <text x="356" y="181" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#334155">hand off</text>
-  <text x="356" y="210" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#475569">AGENTS.md + filled spec</text>
-
-  <!-- 3 · Review -->
-  <rect x="472" y="88" width="200" height="180" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
-  <text x="572" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#1e3a8a">3 · Review</text>
-  <text x="572" y="146" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#475569">Human</text>
-  <rect x="532" y="164" width="80" height="24" rx="12" fill="#00000012"/>
-  <text x="572" y="181" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#334155">ae review</text>
-  <text x="572" y="210" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#475569">review-checklist.md</text>
-
-  <!-- 4 · Verify -->
-  <rect x="688" y="88" width="200" height="180" rx="10" fill="#ecfdf5" stroke="#059669" stroke-width="1.5"/>
-  <text x="788" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#064e3b">4 · Verify</text>
-  <text x="788" y="146" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#475569">Human + Agent</text>
-  <rect x="748" y="164" width="80" height="24" rx="12" fill="#00000012"/>
-  <text x="788" y="181" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#334155">ae verify</text>
-  <text x="788" y="210" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#475569">run the acceptance criteria</text>
-
-  <!-- 5 · Accept -->
-  <rect x="904" y="88" width="200" height="180" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.5"/>
-  <text x="1004" y="120" text-anchor="middle" font-family="system-ui, sans-serif" font-size="16" font-weight="700" fill="#14532d">5 · Accept</text>
-  <text x="1004" y="146" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#475569">Human</text>
-  <rect x="922" y="164" width="164" height="24" rx="12" fill="#00000012"/>
-  <text x="1004" y="181" text-anchor="middle" font-family="ui-monospace, monospace" font-size="12" fill="#334155">ae accept · ae reject</text>
-  <text x="1004" y="210" text-anchor="middle" font-family="ui-monospace, monospace" font-size="11" fill="#475569">recorded decision</text>
-
-  <!-- forward flow -->
-  <line x1="240" y1="178" x2="254" y2="178" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="456" y1="178" x2="470" y2="178" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="672" y1="178" x2="686" y2="178" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
-  <line x1="888" y1="178" x2="902" y2="178" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
-
-  <!-- blocker branch -->
-  <rect x="472" y="330" width="216" height="60" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="1.5"/>
-  <text x="580" y="352" text-anchor="middle" font-family="ui-monospace, monospace" font-size="13" font-weight="700" fill="#78350f">blocker-record.md</text>
-  <text x="580" y="372" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#92400e">record &amp; pivot</text>
-  <line x1="572" y1="268" x2="572" y2="322" stroke="#92400e" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="634" y="300" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#92400e">on stall</text>
-  <polyline points="472,360 356,360 356,272" fill="none" stroke="#92400e" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="420" y="350" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#92400e">pivot → back to Delegate</text>
-
-  <!-- reject arc -->
-  <path d="M 1004 268 C 1004 470 140 470 140 276" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#arr)"/>
-  <text x="572" y="486" text-anchor="middle" font-family="system-ui, sans-serif" font-size="12" fill="#475569">reject → re-enter the loop (spec gap / route failure / verification failure)</text>
-</svg>
+    class S1,S3 human
+    class S2 agent
+    class S4 both
+    class S5 accept
+    class B blocker
+```
 
 The **human** authors the spec and owns three irreplaceable decisions — specification,
 review, acceptance. The **agent** executes inside the scoped loop and returns a diff +
